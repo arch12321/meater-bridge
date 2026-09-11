@@ -1,0 +1,176 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag (e.g., v0.1.0)'
+        required: false
+        default: 'dev'
+
+env:
+  PLATFORMIO_CORE_DIR: .platformio
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - env: esp32-c3-devkitm-1
+            chip: esp32c3
+            name: esp32c3
+          - env: esp32dev
+            chip: esp32
+            name: esp32
+          - env: esp32-s3-devkitc-1
+            chip: esp32s3
+            name: esp32s3
+          # ESP32-C6 disabled: espressif32@7.1.2 doesn't support Arduino framework on C6 yet
+          # - env: esp32-c6-devkitc-1
+          #   chip: esp32c6
+          #   name: esp32c6
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.14'
+
+      - name: Cache PlatformIO
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/pip
+            .platformio
+          key: ${{ runner.os }}-pio-${{ matrix.env }}-${{ hashFiles('platformio.ini') }}
+          restore-keys: |
+            ${{ runner.os }}-pio-${{ matrix.env }}-
+
+      - name: Install PlatformIO
+        run: |
+          python -m pip install --upgrade pip
+          pip install platformio esptool
+
+      - name: Build firmware
+        run: pio run -e ${{ matrix.env }}
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.event.inputs.version || 'dev' }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Prepare artifacts
+        run: |
+          mkdir -p artifacts
+          BUILD=.pio/build/${{ matrix.env }}
+          
+          # Create merged binary for ESP Web Tools (bootloader + partitions + app)
+          # This allows single-file flashing at offset 0x0
+          if [ "${{ matrix.chip }}" = "esp32" ]; then
+            # ESP32: bootloader@0x1000, partitions@0x8000, app@0x10000
+            python -m esptool --chip ${{ matrix.chip }} merge_bin -o artifacts/meater-bridge-${{ matrix.name }}.bin \
+              --flash_mode dio --flash_freq 40m --flash_size 4MB \
+              0x1000 $BUILD/bootloader.bin \
+              0x8000 $BUILD/partitions.bin \
+              0x10000 $BUILD/firmware.bin
+          else
+            # ESP32-C3/S3: bootloader@0x0, partitions@0x8000, app@0x10000
+            python -m esptool --chip ${{ matrix.chip }} merge_bin -o artifacts/meater-bridge-${{ matrix.name }}.bin \
+              --flash_mode dio --flash_freq 80m --flash_size 4MB \
+              0x0 $BUILD/bootloader.bin \
+              0x8000 $BUILD/partitions.bin \
+              0x10000 $BUILD/firmware.bin
+          fi
+          
+          # Also keep individual files for advanced users
+          cp $BUILD/bootloader.bin artifacts/bootloader-${{ matrix.name }}.bin 2>/dev/null || true
+          cp $BUILD/partitions.bin artifacts/partitions-${{ matrix.name }}.bin 2>/dev/null || true
+          cp $BUILD/firmware.bin artifacts/firmware-${{ matrix.name }}.bin 2>/dev/null || true
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: firmware-${{ matrix.name }}
+          path: artifacts/
+          retention-days: 30
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: firmware
+          merge-multiple: true
+
+      - name: List artifacts
+        run: ls -la firmware/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: MEATER Bridge ${{ github.ref_name }}
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-') }}
+          generate_release_notes: true
+          files: |
+            firmware/meater-bridge-*.bin
+            firmware/bootloader-*.bin
+            firmware/partitions-*.bin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  update-web-flasher:
+    needs: [build, release]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: main
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: firmware
+          merge-multiple: true
+
+      - name: Update web flasher
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/}"
+          
+          # Copy merged binaries to docs/flash/ for GitHub Pages (avoids CORS issues)
+          cp firmware/meater-bridge-*.bin docs/flash/
+          
+          # Update version in all manifests
+          for manifest in docs/flash/manifest-*.json; do
+            sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" "$manifest"
+          done
+
+      - name: Commit web flasher update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/flash/
+          git diff --staged --quiet || git commit -m "Update web flasher binaries to ${{ github.ref_name }}"
+          git push

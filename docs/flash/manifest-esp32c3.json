@@ -1,0 +1,17 @@
+{
+  "name": "MEATER Bridge (ESP32-C3)",
+  "version": "v0.1.0",
+  "home_assistant_domain": "meater",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C3",
+      "parts": [
+        {
+          "path": "./meater-bridge-esp32c3.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

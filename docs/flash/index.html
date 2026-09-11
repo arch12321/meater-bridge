@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MEATER Bridge - Web Installer</title>
+  <script type="module" src="https://unpkg.com/esp-web-tools@10/dist/web/install-button.js?module"></script>
+  <style>
+    :root {
+      --primary: #e65100;
+      --primary-dark: #bf360c;
+      --bg: #1a1a1a;
+      --surface: #2d2d2d;
+      --text: #ffffff;
+      --text-muted: #b0b0b0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      margin: 0;
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .container {
+      max-width: 700px;
+      width: 100%;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin: 0 0 10px 0;
+      color: var(--primary);
+    }
+
+    .tagline {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+    }
+
+    h2 {
+      margin-top: 0;
+      font-size: 1.3rem;
+      border-bottom: 1px solid #444;
+      padding-bottom: 10px;
+    }
+
+    .install-section {
+      text-align: center;
+      padding: 20px 0;
+    }
+
+    esp-web-install-button {
+      --inst-button-color: var(--primary);
+    }
+
+    esp-web-install-button::part(button) {
+      font-size: 1.2rem;
+      padding: 15px 40px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    .board-select {
+      margin-bottom: 20px;
+    }
+
+    .board-select label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--text-muted);
+    }
+
+    .board-select select {
+      width: 100%;
+      padding: 12px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #444;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .steps {
+      counter-reset: step;
+    }
+
+    .step {
+      display: flex;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+
+    .step-number {
+      counter-increment: step;
+      background: var(--primary);
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .step-number::before {
+      content: counter(step);
+    }
+
+    .step-content h3 {
+      margin: 0 0 5px 0;
+      font-size: 1rem;
+    }
+
+    .step-content p {
+      margin: 0;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .warning {
+      background: #3d2800;
+      border-left: 4px solid #ff9800;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 0 6px 6px 0;
+    }
+
+    .warning strong {
+      color: #ff9800;
+    }
+
+    .browser-support {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 15px;
+    }
+
+    .browser {
+      background: var(--bg);
+      padding: 8px 15px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+    }
+
+    .browser.supported {
+      color: #4caf50;
+    }
+
+    .browser.unsupported {
+      color: #f44336;
+      text-decoration: line-through;
+    }
+
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    footer a {
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .ai-badge {
+      display: inline-block;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.8rem;
+      }
+      
+      .card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🥩 MEATER Bridge</h1>
+      <p class="tagline">Turn your ESP32 into a Wi-Fi bridge for MEATER probes</p>
+      <span class="ai-badge">Built with AI in 2 hours</span>
+    </header>
+
+    <div class="card">
+      <h2>📡 Install Firmware</h2>
+      
+      <div class="board-select">
+        <label for="board">Select your ESP32 board:</label>
+        <select id="board" onchange="updateManifest()">
+          <option value="esp32c3" selected>ESP32-C3 (recommended)</option>
+          <option value="esp32">ESP32 (original)</option>
+          <option value="esp32s3">ESP32-S3</option>
+          <option value="esp32c6">ESP32-C6</option>
+        </select>
+      </div>
+
+      <div class="install-section">
+        <esp-web-install-button id="install-button" manifest="manifest.json">
+          <button slot="activate">Connect & Install</button>
+          <span slot="unsupported">
+            Your browser doesn't support Web Serial.<br>
+            Use Chrome or Edge on desktop.
+          </span>
+          <span slot="not-allowed">
+            Serial access was denied.<br>
+            Please allow access and try again.
+          </span>
+        </esp-web-install-button>
+      </div>
+
+      <div class="browser-support">
+        <span class="browser supported">✓ Chrome</span>
+        <span class="browser supported">✓ Edge</span>
+        <span class="browser supported">✓ Opera</span>
+        <span class="browser unsupported">✗ Firefox</span>
+        <span class="browser unsupported">✗ Safari</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📋 Instructions</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number"></div>
+          <div class="step-content">
+            <h3>Connect your ESP32</h3>
+            <p>Plug your ESP32 into your computer with a USB data cable (not charge-only).</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number"></div>
+          <div class="step-content">
+            <h3>Select your board type</h3>
+            <p>Choose the ESP32 variant that matches your hardware from the dropdown above.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number"></div>
+          <div class="step-content">
+            <h3>Click "Connect & Install"</h3>
+            <p>Select your ESP32's serial port when prompted, then wait for the flash to complete.</p>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number"></div>
+          <div class="step-content">
+            <h3>Configure Wi-Fi</h3>
+            <p>After flashing, the ESP32 creates a <code>MEATER-Bridge-xxxxxx</code> Wi-Fi network. Connect to it, open <code>192.168.4.1</code>, and log in as user <strong>admin</strong> with password <strong>Meater1234</strong>.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="warning">
+        <strong>Flash not starting?</strong> Hold the <strong>BOOT</strong> button on your ESP32 while clicking "Connect & Install". Release it after the flash begins. On ESP32-C3, BOOT is GPIO 9. On original ESP32, it's GPIO 0.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🔧 What happens next?</h2>
+      <p>After flashing:</p>
+      <ul>
+        <li>The ESP32 starts as a Wi-Fi access point named <code>MEATER-Bridge-xxxxxx</code></li>
+        <li>Connect to it and open <code>192.168.4.1</code> — log in as <strong>admin</strong> / <strong>Meater1234</strong></li>
+        <li>Configure your home Wi-Fi + MQTT settings and save</li>
+        <li>The bridge connects to your MEATER probe/base over Bluetooth</li>
+        <li>Your MEATER app sees the probe over Wi-Fi (same network, no re-pairing)</li>
+        <li>Home Assistant auto-discovers 44 entities via MQTT</li>
+      </ul>
+      <p>See the <a href="https://github.com/arch12321/meater-bridge#readme" target="_blank">full documentation</a> for setup details.</p>
+    </div>
+
+    <footer>
+      <p>
+        <a href="https://github.com/arch12321/meater-bridge">GitHub</a> · 
+        <a href="https://github.com/arch12321/meater-bridge/releases">Releases</a> · 
+        <a href="https://github.com/arch12321/meater-bridge#readme">Documentation</a>
+      </p>
+      <p>Built with <a href="https://kiro.dev">Kiro</a> + GPT Sol 5.6</p>
+    </footer>
+  </div>
+
+  <script>
+    function updateManifest() {
+      const board = document.getElementById('board').value;
+      const button = document.getElementById('install-button');
+      button.setAttribute('manifest', `manifest-${board}.json`);
+    }
+
+    // Initialize with default board
+    document.addEventListener('DOMContentLoaded', updateManifest);
+  </script>
+</body>
+</html>

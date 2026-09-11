@@ -1,0 +1,17 @@
+{
+  "name": "MEATER Bridge (ESP32-C6)",
+  "version": "v0.1.0",
+  "home_assistant_domain": "meater",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32-C6",
+      "parts": [
+        {
+          "path": "https://github.com/arch12321/meater-bridge/releases/download/v0.1.0/meater-bridge-esp32c6.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

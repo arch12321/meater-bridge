@@ -1,0 +1,17 @@
+{
+  "name": "MEATER Bridge (ESP32)",
+  "version": "v0.1.0",
+  "home_assistant_domain": "meater",
+  "new_install_prompt_erase": true,
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "parts": [
+        {
+          "path": "./meater-bridge-esp32.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ]
+}

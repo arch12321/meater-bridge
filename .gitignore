@@ -1,0 +1,8 @@
+.pio/
+.vscode/
+include/config.h
+.DS_Store
+*.bin
+!docs/flash/*.bin
+*.elf
+*.map
